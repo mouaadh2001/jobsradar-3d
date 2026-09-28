@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JobsRadar 3D</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── ROOT TOKENS ── */
+:root {
+  --bg:       #0D1117;
+  --bg2:      #161B22;
+  --bgc:      #1C2128;
+  --bgh:      #21262D;
+  --br:       #30363D;
+  --bra:      rgba(0,212,255,.27);
+  --cy:       #00D4FF;
+  --cyd:      rgba(0,212,255,.12);
+  --vi:       #7C3AED;
+  --vid:      rgba(124,58,237,.13);
+  --gr:       #3FB950;
+  --grd:      rgba(63,185,80,.13);
+  --am:       #F0883E;
+  --re:       #F85149;
+  --t1:       #E6EDF3;
+  --t2:       #8B949E;
+  --t3:       #484F58;
+  --tag:      #21262D;
+  --r:        6px;
+  --rl:       10px;
+  --sidebar:  230px;
+}
+
+/* ── RESET ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--t1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--br); border-radius: 2px; }
+
+/* ── HEADER ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 50px;
+  border-bottom: 1px solid var(--br);
+  background: var(--bg2);
+  flex-shrink: 0;
+  gap: 16px;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+}
+.logo-ico {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, var(--vi), var(--cy));
+  border-radius: 7px;
+  display: grid; place-items: center;
+  font-size: 14px;
+}
+.logo-txt {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -.3px;
+}
+.logo-txt em { color: var(--cy); font-style: normal; }
+.logo-badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  background: var(--vid);
+  border: 1px solid #7C3AED33;
+  border-radius: 10px;
+  color: #A78BFA;
+  font-family: 'JetBrains Mono', monospace;
+}
+.ai-status {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+.ai-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  border: 1px solid var(--br);
+  color: var(--t3);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  transition: all .2s;
+}
+.ai-pill.on { border-color: var(--gr); color: var(--gr); background: var(--grd); }
+.ai-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.countdown {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--t3);
+}
+.countdown b { color: var(--cy); }
+.scan-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, var(--vi), var(--cy));
+  border: none; border-radius: var(--r);
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: opacity .2s;
+  letter-spacing: .3px;
+}
+.scan-btn:hover { opacity: .85; }
+.scan-btn:disabled { opacity: .4; cursor: not-allowed; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinning { animation: spin 1s linear infinite; }
+
+/* ── LOADING STRIPE ── */
+.loading-stripe {
+  height: 2px;
+  background: var(--br);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.loading-stripe.active::after {
+  content: '';
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--vi), var(--cy), var(--vi));
+  background-size: 200% 100%;
+  animation: stripe 1.4s ease-in-out infinite;
+}
+@keyframes stripe { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* ── MAIN LAYOUT ── */
+.layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar);
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-right: 1px solid var(--br);
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.sb-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: 8px;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.stat {
+  background: var(--bg);
+  border: 1px solid var(--br);
+  border-radius: var(--r);
+  padding: 9px 8px;
+  text-align: center;
+}
+.stat .n {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--cy);
+  line-height: 1;
+}
+.stat .l { font-size: 9px; color: var(--t3); margin-top: 3px; }
+.type-row {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--br);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.type-row button {
+  flex: 1;
+  padding: 6px 4px;
+  background: none; border: none;
+  color: var(--t3);
+  font-size: 10px; font-weight: 500;
+  cursor: pointer; transition: all .15s;
+  font-family: 'Inter', sans-serif;
+}
+.type-row button.on { background: var(--vid); color: #A78BFA; }
+.filter-list { display: flex; flex-direction: column; gap: 2px; }
+.fc {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 8px;
+  border-radius: var(--r);
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--t2);
+  user-select: none;
+  transition: background .15s;
+  border: 1px solid transparent;
+}
+.fc:hover { background: var(--bgh); color: var(--t1); }
+.fc.on { background: var(--cyd); color: var(--cy); border-color: var(--bra); }
+.fc .cnt {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  background: var(--tag);
+  padding: 1px 5px;
+  border-radius: 8px;
+  color: var(--t3);
+}
+.fc.on .cnt { background: var(--cyd); color: var(--cy); }
+.kw-wrap { display: flex; flex-wrap: wrap; gap: 3px; }
+.kw {
+  padding: 2px 7px;
+  background: var(--vid);
+  border: 1px solid #7C3AED22;
+  border-radius: 20px;
+  font-size: 9px;
+  color: #A78BFA;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer; transition: all .15s;
+}
+.kw:hover { background: var(--vi); color: #fff; }
+.kw.off { background: var(--tag); border-color: var(--br); color: var(--t3); }
+
+/* ── CONTENT ── */
+.content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.toolbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--br);
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+.search-wrap {
+  flex: 1;
+  display: flex; align-items: center; gap: 7px;
+  background: var(--bg);
+  border: 1px solid var(--br);
+  border-radius: var(--r);
+  padding: 7px 11px;
+}
+.search-wrap input {
+  background: none; border: none;
+  color: var(--t1); font-size: 12px;
+  outline: none; flex: 1;
+  font-family: 'Inter', sans-serif;
+}
+.search-wrap input::placeholder { color: var(--t3); }
+.sort-sel {
+  padding: 7px 11px;
+  background: var(--bg); border: 1px solid var(--br);
+  border-radius: var(--r);
+  color: var(--t2); font-size: 11px;
+  outline: none; cursor: pointer;
+}
+.res-count { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--t3); white-space: nowrap; }
+
+/* ── JOBS ── */
+.jobs-wrap { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+.job-card {
+  background: var(--bgc);
+  border: 1px solid var(--br);
+  border-radius: var(--rl);
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s, transform .1s;
+}
+.job-card:hover { border-color: rgba(0,212,255,.35); background: var(--bgh); transform: translateY(-1px); }
+.job-card.seen { opacity: .42; }
+.job-card.pinned { border-color: var(--vi); }
+.jc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.jc-title { font-size: 13px; font-weight: 600; color: var(--t1); line-height: 1.35; }
+.jc-company { font-size: 11px; color: var(--t2); margin-top: 2px; }
+.badges { display: flex; gap: 4px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.badge {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .4px;
+}
+.b-stage    { background: var(--cyd); color: var(--cy); border: 1px solid var(--bra); }
+.b-alt      { background: var(--vid); color: #A78BFA; border: 1px solid #7C3AED33; }
+.b-new      { background: var(--grd); color: var(--gr); border: 1px solid #3FB95033; }
+.jc-meta { display: flex; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+.meta-i { display: flex; align-items: center; gap: 3px; font-size: 10px; color: var(--t3); }
+.tags-row { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 8px; }
+.tech-tag {
+  padding: 2px 6px;
+  background: var(--tag); border: 1px solid var(--br);
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--t2);
+}
+.tech-tag.hl { background: var(--cyd); border-color: var(--bra); color: var(--cy); }
+.jc-foot { display: flex; align-items: center; justify-content: space-between; }
+.plat-name { font-size: 9px; color: var(--t3); font-family: 'JetBrains Mono', monospace; }
+.card-btns { display: flex; gap: 4px; }
+.cbtn {
+  padding: 3px 9px;
+  border-radius: var(--r); border: 1px solid var(--br);
+  background: var(--bg); color: var(--t2);
+  font-size: 10px; cursor: pointer; transition: all .15s;
+}
+.cbtn:hover { border-color: var(--cy); color: var(--cy); }
+.cbtn.pinned-btn { border-color: var(--vi); color: #A78BFA; }
+.cbtn.go { background: var(--cyd); border-color: var(--cy); color: var(--cy); }
+
+/* ── EMPTY ── */
+.empty {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; color: var(--t3); text-align: center; padding: 40px;
+}
+.empty .ico { font-size: 40px; opacity: .35; }
+.empty h3 { font-size: 15px; color: var(--t2); }
+.empty p { font-size: 11px; max-width: 280px; line-height: 1.7; }
+
+/* ── LOG TERMINAL ── */
+.terminal {
+  background: var(--bg);
+  border-top: 1px solid var(--br);
+  height: 86px; overflow-y: auto;
+  padding: 6px 14px;
+  flex-shrink: 0;
+}
+.log-row {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--t3);
+  line-height: 1.9; display: flex; gap: 8px;
+}
+.log-row .ts { opacity: .4; }
+.log-row.info  .msg { color: var(--cy); }
+.log-row.ok    .msg { color: var(--gr); }
+.log-row.warn  .msg { color: var(--am); }
+.log-row.err   .msg { color: var(--re); }
+
+/* ── STATUS BAR ── */
+.statusbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 3px 14px;
+  background: var(--vi);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: #fff;
+  flex-shrink: 0;
+}
+.statusbar .sep { opacity: .4; }
+
+/* ── MODAL ── */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.8);
+  display: none; align-items: center; justify-content: center;
+  z-index: 100; padding: 20px;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--br);
+  border-radius: var(--rl);
+  padding: 22px;
+  max-width: 580px; width: 100%;
+  max-height: 82vh; overflow-y: auto;
+}
+.modal h2 { font-size: 15px; margin-bottom: 4px; }
+.modal .sub { color: var(--t2); font-size: 11px; margin-bottom: 16px; }
+.msec { margin-bottom: 14px; }
+.msec h4 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .8px;
+  margin-bottom: 7px;
+}
+.msec p { font-size: 12px; color: var(--t2); line-height: 1.75; }
+.mfoot { display: flex; gap: 7px; justify-content: flex-end; margin-top: 18px; }
+.btn-sec { padding: 7px 14px; background: var(--bgc); border: 1px solid var(--br); border-radius: var(--r); color: var(--t2); font-size: 11px; cursor: pointer; }
+.btn-pri { padding: 7px 18px; background: linear-gradient(135deg, var(--vi), var(--cy)); border: none; border-radius: var(--r); color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 34px; right: 16px;
+  background: var(--bgc); border: 1px solid var(--br);
+  border-radius: var(--rl); padding: 10px 14px;
+  font-size: 11px; color: var(--t1);
+  z-index: 200;
+  transform: translateY(14px); opacity: 0;
+  transition: all .3s; max-width: 260px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── BACKEND URL SETUP ── */
+.setup-banner {
+  background: linear-gradient(90deg, var(--vid), var(--cyd));
+  border-bottom: 1px solid var(--bra);
+  padding: 8px 20px;
+  display: flex; align-items: center; gap: 12px;
+  font-size: 11px; color: var(--t2);
+  flex-shrink: 0;
+}
+.setup-banner input {
+  flex: 1; padding: 5px 10px;
+  background: var(--bg); border: 1px solid var(--br);
+  border-radius: var(--r); color: var(--t1);
+  font-size: 11px; font-family: 'JetBrains Mono', monospace;
+  outline: none;
+}
+.setup-banner button {
+  padding: 5px 14px;
+  background: var(--cy); border: none; border-radius: var(--r);
+  color: var(--bg); font-size: 11px; font-weight: 600; cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<!-- SETUP BANNER (shown until URL is configured) -->
+<div class="setup-banner" id="setupBanner">
+  🔗 URL du backend Railway :
+  <input type="text" id="backendInput" placeholder="https://jobsradar-3d-XXXXX.up.railway.app" />
+  <button onclick="saveBackend()">Connecter</button>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-ico">🎮</div>
+    <div class="logo-txt">Jobs<em>Radar</em>.3D</div>
+    <span class="logo-badge">v2.0</span>
+  </div>
+  <div class="ai-status">
+    <div class="ai-pill" id="pillScraping"><div class="dot"></div>Scraping</div>
+    <div class="ai-pill" id="pillGroq"><div class="dot"></div>Groq</div>
+    <div class="ai-pill" id="pillGemini"><div class="dot"></div>Gemini</div>
+  </div>
+  <div class="header-right">
+    <div class="countdown">Prochain scan : <b id="countdown">—</b></div>
+    <button class="scan-btn" id="scanBtn" onclick="triggerScan()">
+      <svg id="scanIco" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Scanner
+    </button>
+  </div>
+</header>
+
+<div class="loading-stripe" id="stripe"></div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div>
+      <div class="sb-label">Statistiques</div>
+      <div class="stats-grid">
+        <div class="stat"><div class="n" id="sT">0</div><div class="l">Offres</div></div>
+        <div class="stat"><div class="n" id="sN">0</div><div class="l">Nouvelles</div></div>
+        <div class="stat"><div class="n" id="sP">0</div><div class="l">Épinglées</div></div>
+        <div class="stat"><div class="n" id="sC">0</div><div class="l">Scans</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="sb-label">Type</div>
+      <div class="type-row">
+        <button class="on" id="bAll" onclick="setType('all')">Tout</button>
+        <button id="bSt" onclick="setType('stage')">Stage</button>
+        <button id="bAl" onclick="setType('alternance')">Alt.</button>
+      </div>
+    </div>
+    <div>
+      <div class="sb-label">Plateforme</div>
+      <div class="filter-list" id="platList">
+        <div class="fc on" data-p="all" onclick="setPlat('all')">Toutes <span class="cnt" id="cAll">0</span></div>
+        <div class="fc" data-p="Indeed" onclick="setPlat('Indeed')">Indeed <span class="cnt" id="cIn">0</span></div>
+        <div class="fc" data-p="LinkedIn" onclick="setPlat('LinkedIn')">LinkedIn <span class="cnt" id="cLi">0</span></div>
+        <div class="fc" data-p="Welcome to the Jungle" onclick="setPlat('Welcome to the Jungle')">WTTJ <span class="cnt" id="cWt">0</span></div>
+        <div class="fc" data-p="HelloWork" onclick="setPlat('HelloWork')">HelloWork <span class="cnt" id="cHw">0</span></div>
+        <div class="fc" data-p="Apec" onclick="setPlat('Apec')">Apec <span class="cnt" id="cAp">0</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="sb-label">Mots-clés actifs</div>
+      <div class="kw-wrap" id="kwWrap"></div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity=".4"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="qi" placeholder="Rechercher titre, entreprise, techno..." oninput="filter()">
+      </div>
+      <select class="sort-sel" id="ss" onchange="filter()">
+        <option value="recent">Plus récentes</option>
+        <option value="company">Entreprise A→Z</option>
+        <option value="platform">Plateforme</option>
+        <option value="new">Nouvelles d'abord</option>
+      </select>
+      <div class="res-count" id="rc">— offres</div>
+    </div>
+
+    <div class="jobs-wrap" id="jw">
+      <div class="empty">
+        <div class="ico">🔌</div>
+        <h3>Connexion au backend...</h3>
+        <p>Entre l'URL de ton backend Railway dans la bannière en haut.</p>
+      </div>
+    </div>
+
+    <div class="terminal" id="term">
+      <div class="log-row info"><span class="ts">--:--:--</span><span class="msg">JobsRadar 3D v2 — Connexion au backend Railway...</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <span>JobsRadar 3D v2</span>
+  <span class="sep">|</span><span id="sbSt">En attente</span>
+  <span class="sep">|</span><span>France · Stage + Alternance</span>
+  <span class="sep">|</span><span id="sbLs">Jamais scanné</span>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="ov" onclick="if(event.target===this)closeMod()">
+  <div class="modal">
+    <h2 id="mTi"></h2>
+    <div class="sub" id="mSub"></div>
+    <div class="msec"><h4>Plateforme</h4><p id="mPl"></p></div>
+    <div class="msec"><h4>Description</h4><p id="mDe"></p></div>
+    <div class="msec"><h4>Technologies</h4><div class="tags-row" id="mTa"></div></div>
+    <div class="mfoot">
+      <button class="btn-sec" onclick="closeMod()">Fermer</button>
+      <button class="btn-sec" id="mPin" onclick="togglePinMod()">📌 Épingler</button>
+      <button class="btn-pri" id="mGo">Voir l'offre →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════
+const KWS = [
+  '3D','OpenGL','Vulkan','Rendering','Computer Graphics',
+  'Unreal Engine','Unity','VR','AR','XR','Shader','GLSL','HLSL',
+  'Ray Tracing','Game Dev','Simulation','WebGL','Three.js',
+  'C++','Blender','Houdini','Technical Artist','VFX','GPU'
+];
+const PLATS = { Indeed:'cIn', LinkedIn:'cLi', 'Welcome to the Jungle':'cWt', HelloWork:'cHw', Apec:'cAp' };
+const PLAT_COLORS = {
+  LinkedIn:'#0A66C2', Indeed:'#003A9B',
+  'Welcome to the Jungle':'#FF3860', Apec:'#E86E0A',
+  HelloWork:'#6C47FF'
+};
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let API = localStorage.getItem('jobsradar_api') || '';
+let jobs = [], pinned = new Set(), seen = new Set(), activeKw = new Set(KWS);
+let activePlat = 'all', typeF = 'all', curJob = null, nextAt = null;
+
+function lsLoad() {
+  try {
+    pinned = new Set(JSON.parse(localStorage.getItem('jrPinned') || '[]'));
+    seen   = new Set(JSON.parse(localStorage.getItem('jrSeen')   || '[]'));
+  } catch(e) {}
+}
+function lsSave() {
+  localStorage.setItem('jrPinned', JSON.stringify([...pinned]));
+  localStorage.setItem('jrSeen',   JSON.stringify([...seen]));
+}
+function saveBackend() {
+  const v = document.getElementById('backendInput').value.trim().replace(/\/$/, '');
+  if (!v) return;
+  API = v;
+  localStorage.setItem('jobsradar_api', v);
+  document.getElementById('setupBanner').style.display = 'none';
+  log('info', `Backend connecté : ${v}`);
+  fetchAll();
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+function init() {
+  lsLoad();
+  renderKw();
+  if (API) {
+    document.getElementById('setupBanner').style.display = 'none';
+    document.getElementById('backendInput').value = API;
+    fetchAll();
+    setInterval(fetchJobs, 30000);
+  } else {
+    document.getElementById('backendInput').value = API;
+  }
+}
+
+// ══════════════════════════════════════════════
+//  FETCH
+// ══════════════════════════════════════════════
+async function fetchAll() {
+  await fetchStatus();
+  await fetchJobs();
+  await fetchLogs();
+}
+
+async function fetchJobs() {
+  if (!API) return;
+  try {
+    const r = await fetch(`${API}/api/jobs?limit=300`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    jobs = d.jobs || [];
+    document.getElementById('sC').textContent = d.scan_count || 0;
+    if (d.last_scan) {
+      const dt = new Date(d.last_scan);
+      document.getElementById('sbLs').textContent = 'Dernier : ' + dt.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+    }
+    document.getElementById('sbSt').textContent = '✓ Connecté';
+    filter();
+  } catch(e) {
+    log('err', 'Backend non joignable — vérifie l\'URL Railway');
+    document.getElementById('sbSt').textContent = '⚠ Hors ligne';
+  }
+}
+
+async function fetchStatus() {
+  if (!API) return;
+  try {
+    const r = await fetch(`${API}/`);
+    const d = await r.json();
+    document.getElementById('pillScraping').classList.add('on');
+    if (d.ai?.groq)   document.getElementById('pillGroq').classList.add('on');
+    if (d.ai?.gemini) document.getElementById('pillGemini').classList.add('on');
+  } catch(e) {}
+}
+
+async function fetchLogs() {
+  if (!API) return;
+  try {
+    const r = await fetch(`${API}/api/logs?limit=20`);
+    const d = await r.json();
+    (d.logs || []).forEach(l => log(l.level === 'success' ? 'ok' : l.level, l.message));
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════
+//  SCAN
+// ══════════════════════════════════════════════
+async function triggerScan() {
+  if (!API) { showToast('⚠ Configure l\'URL backend d\'abord !'); return; }
+  const btn = document.getElementById('scanBtn');
+  const ico = document.getElementById('scanIco');
+  btn.disabled = true;
+  ico.classList.add('spinning');
+  document.getElementById('stripe').classList.add('active');
+  log('info', 'Scan lancé — scraping en cours sur toutes les plateformes...');
+  try {
+    await fetch(`${API}/api/scan`, { method: 'POST' });
+    log('ok', 'Scan démarré en arrière-plan (résultats dans ~30s)');
+    showToast('🔍 Scan lancé ! Résultats dans ~30s');
+    scheduleNext();
+    setTimeout(fetchAll, 35000);
+  } catch(e) {
+    log('err', 'Erreur lors du scan : ' + e.message);
+    showToast('❌ Erreur scan');
+  } finally {
+    btn.disabled = false;
+    ico.classList.remove('spinning');
+    document.getElementById('stripe').classList.remove('active');
+  }
+}
+
+function scheduleNext() {
+  nextAt = new Date(Date.now() + 6 * 3600 * 1000);
+  const tick = () => {
+    if (!nextAt) return;
+    const d = nextAt - Date.now();
+    if (d <= 0) { document.getElementById('countdown').textContent = 'maintenant'; return; }
+    const h = Math.floor(d / 3600000), m = Math.floor((d % 3600000) / 60000);
+    document.getElementById('countdown').textContent = `dans ${h}h${String(m).padStart(2,'0')}`;
+  };
+  tick();
+  setInterval(tick, 60000);
+}
+
+// ══════════════════════════════════════════════
+//  FILTERS
+// ══════════════════════════════════════════════
+function setType(t) {
+  typeF = t;
+  ['bAll','bSt','bAl'].forEach(id => document.getElementById(id).classList.remove('on'));
+  document.getElementById({ all:'bAll', stage:'bSt', alternance:'bAl' }[t]).classList.add('on');
+  filter();
+}
+function setPlat(p) {
+  activePlat = p;
+  document.querySelectorAll('[data-p]').forEach(el => el.classList.toggle('on', el.dataset.p === p));
+  filter();
+}
+function toggleKw(k) {
+  activeKw.has(k) ? activeKw.delete(k) : activeKw.add(k);
+  renderKw(); filter();
+}
+
+function filter() {
+  const q = document.getElementById('qi').value.toLowerCase();
+  const s = document.getElementById('ss').value;
+  let list = jobs.filter(j => {
+    if (activePlat !== 'all' && j.platform !== activePlat) return false;
+    if (typeF !== 'all' && j.type !== typeF) return false;
+    if (q && !`${j.title} ${j.company} ${(j.tags||[]).join(' ')}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if (s === 'recent') list.sort((a,b) => (b.scanned_at||'').localeCompare(a.scanned_at||''));
+  else if (s === 'company') list.sort((a,b) => a.company.localeCompare(b.company));
+  else if (s === 'platform') list.sort((a,b) => a.platform.localeCompare(b.platform));
+  else if (s === 'new') list.sort((a,b) => (b.is_new?1:0) - (a.is_new?1:0));
+
+  document.getElementById('rc').textContent = `${list.length} offre${list.length!==1?'s':''}`;
+  renderJobs(list);
+  updateStats();
+  updateCounts();
+}
+
+function updateStats() {
+  document.getElementById('sT').textContent = jobs.length;
+  document.getElementById('sN').textContent = jobs.filter(j => j.is_new && !seen.has(j.id)).length;
+  document.getElementById('sP').textContent = pinned.size;
+}
+function updateCounts() {
+  document.getElementById('cAll').textContent = jobs.length;
+  Object.entries(PLATS).forEach(([p,id]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = jobs.filter(j => j.platform === p).length;
+  });
+}
+
+// ══════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════
+function renderJobs(list) {
+  const w = document.getElementById('jw');
+  if (!list.length) {
+    w.innerHTML = `<div class="empty">
+      <div class="ico">${jobs.length ? '🔍' : '🎯'}</div>
+      <h3>${jobs.length ? 'Aucun résultat' : 'Prêt à scanner'}</h3>
+      <p>${jobs.length ? 'Ajuste les filtres ou lance un nouveau scan.' : 'Configure l\'URL backend puis lance un scan.'}</p>
+      ${!jobs.length ? '<button class="scan-btn" onclick="triggerScan()" style="margin-top:10px;padding:8px 18px;">🔍 Scanner maintenant</button>' : ''}
+    </div>`;
+    return;
+  }
+  w.innerHTML = list.map(j => {
+    const isNew  = j.is_new && !seen.has(j.id);
+    const isPinn = pinned.has(j.id);
+    const tags   = (j.tags || []).slice(0, 5);
+    const d      = j.posted_days_ago || 0;
+    const dTxt   = d === 0 ? "Auj." : d === 1 ? 'Hier' : `${d}j`;
+    const color  = PLAT_COLORS[j.platform] || '#7C3AED';
+    return `<div class="job-card ${seen.has(j.id)?'seen':''} ${isPinn?'pinned':''}" onclick="openJob('${esc(j.id)}')">
+      <div class="jc-top">
+        <div>
+          <div class="jc-title">${esc(j.title)}</div>
+          <div class="jc-company">${esc(j.company)} · ${esc(j.location||'France')}</div>
+        </div>
+        <div class="badges">
+          ${isNew ? '<span class="badge b-new">Nouveau</span>' : ''}
+          <span class="badge ${j.type==='stage'?'b-stage':'b-alt'}">${esc(j.type)}</span>
+        </div>
+      </div>
+      <div class="jc-meta">
+        <div class="meta-i">📅 ${esc(dTxt)}</div>
+        <div class="meta-i">⏱ ${esc(j.duration||'—')}</div>
+        <div class="meta-i">📍 ${esc(j.location||'France')}</div>
+      </div>
+      <div class="tags-row">${tags.map(t => `<span class="tech-tag ${activeKw.has(t)?'hl':''}">${esc(t)}</span>`).join('')}</div>
+      <div class="jc-foot">
+        <span class="plat-name" style="color:${color}">⬤ ${esc(j.platform)}</span>
+        <div class="card-btns" onclick="event.stopPropagation()">
+          <button class="cbtn ${isPinn?'pinned-btn':''}" onclick="togglePin('${esc(j.id)}')">${isPinn?'📌':'🔖'}</button>
+          <button class="cbtn go" onclick="window.open('${esc(j.url||'#')}','_blank')">Voir →</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderKw() {
+  document.getElementById('kwWrap').innerHTML = KWS.map(k =>
+    `<span class="kw ${activeKw.has(k)?'':'off'}" onclick="toggleKw('${k}')">${k}</span>`
+  ).join('');
+}
+
+// ══════════════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════════════
+function openJob(id) {
+  const j = jobs.find(x => x.id === id);
+  if (!j) return;
+  curJob = j;
+  seen.add(id); lsSave(); updateStats();
+  document.getElementById('mTi').textContent = j.title;
+  document.getElementById('mSub').textContent = `${j.company} · ${j.location||'France'} · ${j.duration||'—'}`;
+  document.getElementById('mPl').textContent  = j.platform + (j.scanned_at ? ` — scanné le ${new Date(j.scanned_at).toLocaleDateString('fr-FR')}` : '');
+  document.getElementById('mDe').textContent  = j.description || 'Description non disponible.';
+  document.getElementById('mTa').innerHTML    = (j.tags||[]).map(t => `<span class="tech-tag">${esc(t)}</span>`).join('');
+  document.getElementById('mPin').textContent = pinned.has(id) ? '📌 Épinglé' : '📌 Épingler';
+  document.getElementById('mGo').onclick = () => window.open(j.url||'#', '_blank');
+  document.getElementById('ov').classList.add('open');
+  filter();
+}
+function closeMod() { document.getElementById('ov').classList.remove('open'); }
+function togglePinMod() {
+  if (!curJob) return;
+  togglePin(curJob.id);
+  document.getElementById('mPin').textContent = pinned.has(curJob.id) ? '📌 Épinglé' : '📌 Épingler';
+}
+function togglePin(id) {
+  pinned.has(id) ? pinned.delete(id) : pinned.add(id);
+  lsSave(); updateStats(); filter();
+}
+
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function log(type, msg) {
+  const t = document.getElementById('term');
+  const now = new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  const el = document.createElement('div');
+  el.className = `log-row ${type}`;
+  el.innerHTML = `<span class="ts">${now}</span><span class="msg">${esc(msg)}</span>`;
+  t.appendChild(el);
+  t.scrollTop = t.scrollHeight;
+}
+function showToast(m) {
+  const el = document.getElementById('toast');
+  el.textContent = m; el.className = 'toast show';
+  setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+init();
+</script>
+</body>
+</html>

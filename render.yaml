@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: jobsradar-3d
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 1 -k uvicorn.workers.UvicornWorker main:app
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SCANS_PER_DAY
+        value: "4"
+      - key: PORT
+        value: "10000"

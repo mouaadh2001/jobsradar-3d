@@ -329,7 +329,7 @@ async def call_groq(client: httpx.AsyncClient, prompt: str) -> Optional[str]:
             "https://api.groq.com/openai/v1/chat/completions",
             headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
             json={
-                "model": "llama3-70b-8192",
+                "model": "llama-3.3-70b-versatile",
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": 2000, "temperature": 0.6,
             },
